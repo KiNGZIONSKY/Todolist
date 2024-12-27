@@ -1,0 +1,559 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport"
+        content="width=device-width, initial-scale=1.0" />
+  <title>Advanced To-Do List</title>
+
+  <!-- 
+    Styles:
+    1. Responsive design for mobile and desktop.
+    2. Some transitions for smoother UI.
+    3. Light/dark mode toggle (plus prefers-color-scheme).
+  -->
+  <style>
+    :root {
+      --color-bg: #ffffff;
+      --color-text: #000000;
+      --color-border: #ccc;
+      --color-card: #f9f9f9;
+      --color-primary: #28a745;
+      --color-primary-hover: #218838;
+      --color-danger: #dc3545;
+      --color-danger-hover: #c82333;
+      --border-radius: 10px;
+      --transition-time: 0.2s;
+    }
+
+    /* Light vs. Dark Theme Variables */
+    [data-theme="dark"] {
+      --color-bg: #121212;
+      --color-text: #ffffff;
+      --color-border: #555;
+      --color-card: #333;
+      --color-primary: #28a745;
+      --color-primary-hover: #218838;
+      --color-danger: #dc3545;
+      --color-danger-hover: #c82333;
+    }
+
+    body {
+      margin: 0;
+      padding: 0;
+      background-color: var(--color-bg);
+      color: var(--color-text);
+      font-family: Arial, sans-serif;
+      transition: background-color var(--transition-time),
+                  color var(--transition-time);
+    }
+
+    /* For users who have system dark mode preference */
+    @media (prefers-color-scheme: dark) {
+      :root:not([data-theme="light"]) {
+        --color-bg: #121212;
+        --color-text: #ffffff;
+        --color-border: #555;
+        --color-card: #333;
+      }
+    }
+
+    header {
+      text-align: center;
+      padding: 20px;
+      background-color: var(--color-card);
+      margin-bottom: 20px;
+      border-bottom: 1px solid var(--color-border);
+    }
+
+    header h1 {
+      margin: 0;
+      font-size: 1.8rem;
+    }
+
+    #theme-toggle {
+      position: absolute;
+      top: 15px;
+      right: 15px;
+      background-color: var(--color-primary);
+      color: #fff;
+      border: none;
+      border-radius: var(--border-radius);
+      cursor: pointer;
+      font-size: 1rem;
+      padding: 8px 12px;
+      transition: background-color var(--transition-time);
+    }
+    #theme-toggle:hover {
+      background-color: var(--color-primary-hover);
+    }
+
+    /* Main container for controls and the list */
+    .container {
+      max-width: 600px;
+      margin: 0 auto;
+      padding: 0 20px 40px;
+    }
+
+    /* Search bar */
+    #search-bar {
+      display: flex;
+      flex-direction: row;
+      gap: 10px;
+      margin-bottom: 20px;
+    }
+    #search-input {
+      flex-grow: 1;
+      padding: 12px;
+      font-size: 1rem;
+      border: 1px solid var(--color-border);
+      border-radius: var(--border-radius);
+      background-color: var(--color-bg);
+      color: var(--color-text);
+    }
+    #search-input:focus {
+      outline: none;
+      border-color: var(--color-primary);
+    }
+
+    /* Checkboxes and toggles row */
+    .filters {
+      display: flex;
+      align-items: center;
+      gap: 15px;
+      flex-wrap: wrap;
+      margin-bottom: 10px;
+    }
+    .filters label {
+      font-size: 0.9rem;
+      cursor: pointer;
+      user-select: none;
+    }
+
+    /* Form for adding a new task */
+    #todo-form {
+      display: flex;
+      flex-direction: row;
+      gap: 10px;
+      margin-bottom: 20px;
+      flex-wrap: wrap;
+      align-items: center;
+    }
+    #todo-input {
+      flex-grow: 1;
+      max-width: 400px;
+      padding: 12px;
+      font-size: 1rem;
+      border: 1px solid var(--color-border);
+      border-radius: var(--border-radius);
+      background-color: var(--color-bg);
+      color: var(--color-text);
+    }
+    #todo-input:focus {
+      outline: none;
+      border-color: var(--color-primary);
+    }
+    #add-button {
+      background-color: var(--color-primary);
+      color: #fff;
+      border: none;
+      border-radius: var(--border-radius);
+      padding: 12px 20px;
+      font-size: 1rem;
+      cursor: pointer;
+      transition: background-color var(--transition-time);
+    }
+    #add-button:hover {
+      background-color: var(--color-primary-hover);
+    }
+
+    /* The to-do list */
+    #todo-list {
+      list-style: none;
+      margin: 0;
+      padding: 0;
+      max-height: 400px;
+      overflow-y: auto;
+    }
+
+    /* Each task item */
+    .todo-item {
+      display: flex;
+      align-items: center;
+      background-color: var(--color-card);
+      margin-bottom: 10px;
+      padding: 12px;
+      border-radius: var(--border-radius);
+      border: 1px solid var(--color-border);
+      justify-content: space-between;
+      transition: background-color var(--transition-time),
+                  opacity var(--transition-time);
+    }
+    .todo-left {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+    }
+    .todo-text {
+      cursor: pointer;
+    }
+    .todo-text.completed {
+      text-decoration: line-through;
+      opacity: 0.6;
+    }
+    .task-input {
+      width: 100%;
+      border: 1px solid var(--color-border);
+      border-radius: var(--border-radius);
+      padding: 4px 8px;
+      font-size: 0.9rem;
+      background-color: var(--color-bg);
+      color: var(--color-text);
+    }
+    .task-input:focus {
+      outline: none;
+      border-color: var(--color-primary);
+    }
+    .todo-buttons {
+      display: flex;
+      gap: 10px;
+    }
+    .btn {
+      border: none;
+      border-radius: var(--border-radius);
+      padding: 8px 12px;
+      color: #fff;
+      cursor: pointer;
+      transition: background-color var(--transition-time);
+      font-size: 0.9rem;
+    }
+    .btn-danger {
+      background-color: var(--color-danger);
+    }
+    .btn-danger:hover {
+      background-color: var(--color-danger-hover);
+    }
+    .btn-primary {
+      background-color: var(--color-primary);
+    }
+    .btn-primary:hover {
+      background-color: var(--color-primary-hover);
+    }
+
+    /* Bottom actions (clear completed, clear all) */
+    .actions {
+      margin-top: 20px;
+      display: flex;
+      gap: 10px;
+      flex-wrap: wrap;
+      justify-content: center;
+    }
+
+    .fade-enter {
+      opacity: 0;
+      transform: translateX(-20px);
+    }
+    .fade-enter-active {
+      opacity: 1;
+      transform: translateX(0);
+      transition: opacity var(--transition-time), transform var(--transition-time);
+    }
+    .fade-exit {
+      opacity: 1;
+      transform: translateX(0);
+    }
+    .fade-exit-active {
+      opacity: 0;
+      transform: translateX(20px);
+      transition: opacity var(--transition-time), transform var(--transition-time);
+    }
+
+  </style>
+</head>
+<body>
+  <header>
+    <button id="theme-toggle" title="Toggle Light/Dark Mode">Toggle Theme</button>
+    <h1>Advanced To-Do List</h1>
+  </header>
+
+  <div class="container">
+    <!-- Search bar -->
+    <div id="search-bar">
+      <input 
+        type="text" 
+        id="search-input" 
+        placeholder="Search tasks..." 
+        aria-label="Search tasks"
+      />
+    </div>
+
+    <!-- Filtering Options -->
+    <div class="filters">
+      <label>
+        <input 
+          type="checkbox" 
+          id="hide-completed" 
+        />
+        Hide Completed
+      </label>
+    </div>
+
+    <!-- Form to Add Task -->
+    <form id="todo-form" autocomplete="off">
+      <input 
+        type="text" 
+        id="todo-input" 
+        placeholder="Enter a new task..." 
+        required
+        aria-label="Task text"
+      />
+      <button id="add-button" type="submit">Add</button>
+    </form>
+
+    <!-- Task List -->
+    <ul id="todo-list"></ul>
+
+    <!-- Actions to clear tasks -->
+    <div class="actions">
+      <button id="clear-completed" class="btn btn-primary">
+        Clear Completed
+      </button>
+      <button id="clear-all" class="btn btn-danger">
+        Clear All
+      </button>
+    </div>
+  </div>
+
+  <script>
+    /****************************************************
+     *                  CONSTANTS & DATA                *
+     ****************************************************/
+    const LOCAL_STORAGE_KEY = "advancedTodoItems";
+
+    /* Our tasks array will store objects like:
+       { id: Date.now(), text: "Some task", completed: false }
+    */
+    let tasks = [];
+
+    /****************************************************
+     *                  DOM REFERENCES                  *
+     ****************************************************/
+    const body           = document.body;
+    const themeToggle    = document.getElementById("theme-toggle");
+    const searchInput    = document.getElementById("search-input");
+    const hideCompleted  = document.getElementById("hide-completed");
+    const todoForm       = document.getElementById("todo-form");
+    const todoInput      = document.getElementById("todo-input");
+    const todoList       = document.getElementById("todo-list");
+    const clearCompleted = document.getElementById("clear-completed");
+    const clearAll       = document.getElementById("clear-all");
+
+    /****************************************************
+     *                 INIT & EVENT LISTENERS           *
+     ****************************************************/
+    document.addEventListener("DOMContentLoaded", init);
+    themeToggle.addEventListener("click", toggleTheme);
+    todoForm.addEventListener("submit", onAddTask);
+    hideCompleted.addEventListener("change", render);
+    clearCompleted.addEventListener("click", onClearCompleted);
+    clearAll.addEventListener("click", onClearAll);
+    searchInput.addEventListener("input", render);
+
+    /**
+     * init - loads tasks from localStorage and renders them.
+     */
+    function init() {
+      loadTasks();
+      applyPreferredTheme();
+      render();
+    }
+
+    /**
+     * loadTasks - reads tasks from localStorage
+     */
+    function loadTasks() {
+      const data = localStorage.getItem(LOCAL_STORAGE_KEY);
+      tasks = data ? JSON.parse(data) : [];
+    }
+
+    /**
+     * saveTasks - writes tasks to localStorage
+     */
+    function saveTasks() {
+      localStorage.setItem(LOCAL_STORAGE_KEY, JSON.stringify(tasks));
+    }
+
+    /**
+     * applyPreferredTheme - checks local storage or user preference
+     * to set the initial theme (light or dark).
+     */
+    function applyPreferredTheme() {
+      const savedTheme = localStorage.getItem("appTheme");
+      if (savedTheme) {
+        body.setAttribute("data-theme", savedTheme);
+      } else {
+        // Let the system's "prefers-color-scheme" handle this by default.
+      }
+    }
+
+    /**
+     * toggleTheme - toggles between light and dark modes
+     */
+    function toggleTheme() {
+      const currentTheme = body.getAttribute("data-theme");
+      const newTheme = currentTheme === "dark" ? "light" : "dark";
+      body.setAttribute("data-theme", newTheme);
+      localStorage.setItem("appTheme", newTheme);
+    }
+
+    /****************************************************
+     *                  TASK OPERATIONS                 *
+     ****************************************************/
+    /**
+     * onAddTask - event handler for the "Add" button form submission
+     */
+    function onAddTask(e) {
+      e.preventDefault();
+      const text = todoInput.value.trim();
+      if (!text) return;
+
+      const newTask = {
+        id: Date.now(),
+        text: text,
+        completed: false,
+      };
+      tasks.push(newTask);
+      saveTasks();
+      todoInput.value = "";
+      render();
+    }
+
+    /**
+     * onClearCompleted - removes all completed tasks
+     */
+    function onClearCompleted() {
+      tasks = tasks.filter((task) => !task.completed);
+      saveTasks();
+      render();
+    }
+
+    /**
+     * onClearAll - removes all tasks
+     */
+    function onClearAll() {
+      if (!confirm("Are you sure you want to remove ALL tasks?")) return;
+      tasks = [];
+      saveTasks();
+      render();
+    }
+
+    /**
+     * toggleCompletion - toggles the completed status of a task
+     */
+    function toggleCompletion(taskId) {
+      const task = tasks.find((t) => t.id === taskId);
+      if (task) {
+        task.completed = !task.completed;
+        saveTasks();
+        render();
+      }
+    }
+
+    /**
+     * editTask - lets the user edit the task text
+     */
+    function editTask(taskId) {
+      const task = tasks.find((t) => t.id === taskId);
+      if (!task) return;
+
+      // Prompt for new text or do inline editing
+      const newText = prompt("Edit Task", task.text);
+      if (newText !== null) {
+        const textTrimmed = newText.trim();
+        if (textTrimmed) {
+          task.text = textTrimmed;
+          saveTasks();
+          render();
+        }
+      }
+    }
+
+    /**
+     * deleteTask - permanently removes a task
+     */
+    function deleteTask(taskId) {
+      tasks = tasks.filter((t) => t.id !== taskId);
+      saveTasks();
+      render();
+    }
+
+    /****************************************************
+     *                  RENDERING LOGIC                 *
+     ****************************************************/
+    /**
+     * render - re-renders the list based on current tasks array
+     */
+    function render() {
+      todoList.innerHTML = "";
+
+      const query = searchInput.value.toLowerCase();
+      const shouldHideCompleted = hideCompleted.checked;
+
+      // Filter, then create DOM elements
+      tasks
+        .filter((task) => {
+          const matchesSearch = task.text.toLowerCase().includes(query);
+          const meetsHideCriteria = !(shouldHideCompleted && task.completed);
+          return matchesSearch && meetsHideCriteria;
+        })
+        .forEach((task) => {
+          const li = createTaskListItem(task);
+          todoList.appendChild(li);
+        });
+    }
+
+    /**
+     * createTaskListItem - returns a DOM element <li> representing the task
+     */
+    function createTaskListItem(task) {
+      const li = document.createElement("li");
+      li.className = "todo-item";
+
+      const leftDiv = document.createElement("div");
+      leftDiv.className = "todo-left";
+
+      // 1) Completion Checkbox
+      const checkbox = document.createElement("input");
+      checkbox.type = "checkbox";
+      checkbox.checked = task.completed;
+      checkbox.addEventListener("change", () => toggleCompletion(task.id));
+
+      // 2) Task Text (clickable to edit)
+      const span = document.createElement("span");
+      span.className = "todo-text" + (task.completed ? " completed" : "");
+      span.textContent = task.text;
+      span.addEventListener("click", () => editTask(task.id));
+
+      leftDiv.appendChild(checkbox);
+      leftDiv.appendChild(span);
+
+      const rightDiv = document.createElement("div");
+      rightDiv.className = "todo-buttons";
+
+      // 3) Delete Button
+      const deleteBtn = document.createElement("button");
+      deleteBtn.textContent = "Delete";
+      deleteBtn.className = "btn btn-danger";
+      deleteBtn.addEventListener("click", () => deleteTask(task.id));
+
+      rightDiv.appendChild(deleteBtn);
+
+      // Combine left and right sections
+      li.appendChild(leftDiv);
+      li.appendChild(rightDiv);
+
+      return li;
+    }
+  </script>
+</body>
+</html>
